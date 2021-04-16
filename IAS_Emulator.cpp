@@ -15,6 +15,7 @@ int exec(unsigned long long *M,short PC)
 			IBR=(MBR)%((unsigned long long)1<<20);
 			IR=MBR>>32;
 			MAR=(MBR>>20)%((unsigned long long)1<<12);
+			NextIntruction:
 			switch(IR)
 			{
 				case 0x00:
@@ -52,7 +53,7 @@ int exec(unsigned long long *M,short PC)
 				case 0x0A:
 					AC=AR;
 				break;
-				case 0x0b:
+				case 0x0B:
 					unsigned long long ARR=AR%(1<<20);
 					unsigned long long ARL=AR>>20;
 					
@@ -85,11 +86,45 @@ int exec(unsigned long long *M,short PC)
 					AC+=ANS10>>20;
 					AC+=ANS01>>20;
 				break;
+				case 0x0C:
+					unsigned long long quo=AC/(*(M+MAR)),rem=AC%(*(M+MAR));
+					AR=quo;
+					AC=rem;
+				break;
+				case 0x0D:
+					IR=MBR>>32;
+					MAR=(MBR>>20)%((unsigned long long)1<<12);
+					goto NextInstruction;
+				break;
+				case 0x0E:
+					IR=(MBR>>12)%((unsigned long long)1<<8);
+					MAR=MBR%((unsigned long long)1<<12);
+					goto NextInstruction;
+				break;
+				case 0x0F:
+					if(AC>=0)
+					{
+						IR=MBR>>32;
+						MAR=(MBR>>20)%((unsigned long long)1<<12);
+						goto NextInstruction;
+					}
+				break;
+				case 0x10:
+					if(AC>=0)
+					{
+						IR=(MBR>>12)%((unsigned long long)1<<8);
+						MAR=MBR%((unsigned long long)1<<12);
+						goto NextInstruction;
+					}
+				break;
+				case 0x11:
+					(*(M+MAR))=AC;
+				break;
 			}
 		}
 	}
 }
-int main
+int main()
 {
 	unsigned long long Memory[1000];
 	int running=1;
