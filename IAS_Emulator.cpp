@@ -194,7 +194,7 @@ int main()
 		Memory[i]=0;
 	}
 	
-	Memory[0]=15;
+	Memory[0]=1;
 	Memory[1]=15;
 	Memory[3]=0x0100006001;
 	Memory[4]=0x1000601000;
