@@ -2,8 +2,8 @@
 using namespace std;
 int exec(unsigned long long *M,short PC)
 {
-	unsigned long long AC=0,AR=0,MQ=0,MBR=0,IBR=0,IR=0,MAR=0;
-	for(;pc<1000;pc++)
+	unsigned long long AC=0,MQ=0,MBR=0,IBR=0,IR=0,MAR=0;
+	for(;PC<1000;PC++)
 	{
 		if(IBR==0)
 		{
@@ -15,7 +15,7 @@ int exec(unsigned long long *M,short PC)
 			IBR=(MBR)%((unsigned long long)1<<20);
 			IR=MBR>>32;
 			MAR=(MBR>>20)%((unsigned long long)1<<12);
-			NextIntruction:
+			NextInstruction:;
 			switch(IR)
 			{
 				case 0x00:
@@ -48,35 +48,36 @@ int exec(unsigned long long *M,short PC)
 					AC-=((*(M+MAR))>0)?(*(M+MAR)):-(*(M+MAR));
 				break;
 				case 0x09:
-					AR=(*(M+MAR));
+					MQ=(*(M+MAR));
 				break;
 				case 0x0A:
-					AC=AR;
+					AC=MQ;
 				break;
 				case 0x0B:
-					unsigned long long ARR=AR%(1<<20);
-					unsigned long long ARL=AR>>20;
+				{
+					unsigned long long MQR=MQ%(1<<20);
+					unsigned long long MQL=MQ>>20;
 					
 					unsigned long long MR=(*(M+MAR))%(1<<20);
 					unsigned long long ML=(*(M+MAR))>>20;
 					
-					unsigned long long ANS11=ML*ARL;
-					unsigned long long ANS10=MR*ARL;
-					unsigned long long ANS01=ML*ARR;
-					unsigned long long ANS00=MR*ARR;
+					unsigned long long ANS11=ML*MQL;
+					unsigned long long ANS10=MR*MQL;
+					unsigned long long ANS01=ML*MQR;
+					unsigned long long ANS00=MR*MQR;
 					
 					int carry=0;
 					unsigned long long temp=0;
-					AR=ANS00;
-					temp=AR;
-					AR+=ANS01%(1<<20);
-					if(temp>AR)
+					MQ=ANS00;
+					temp=MQ;
+					MQ+=ANS01%(1<<20);
+					if(temp>MQ)
 					{
 						carry++;
 					}
-					temp=AR;
-					AR+=ANS10%(1<<20);
-					if(temp>AR)
+					temp=MQ;
+					MQ+=ANS10%(1<<20);
+					if(temp>MQ)
 					{
 						carry++;
 					}
@@ -85,11 +86,14 @@ int exec(unsigned long long *M,short PC)
 					AC+=ANS11;
 					AC+=ANS10>>20;
 					AC+=ANS01>>20;
+				}
 				break;
 				case 0x0C:
+				{
 					unsigned long long quo=AC/(*(M+MAR)),rem=AC%(*(M+MAR));
-					AR=quo;
+					MQ=quo;
 					AC=rem;
+				}
 				break;
 				case 0x0D:
 					IR=MBR>>32;
@@ -120,15 +124,34 @@ int exec(unsigned long long *M,short PC)
 				case 0x11:
 					(*(M+MAR))=AC;
 				break;
+				case 0x12:
+				{
+					unsigned long long temp=(*(M+MAR))%(1<<20);
+					unsigned long long temp1=(*(M+MAR))>>32;
+					*(M+MAR)=temp1<<32 + AC<<20 + temp;
+				}
+				break;
+				case 0x13:
+				{
+					unsigned long long temp=(*(M+MAR))>>12;
+					*(M+MAR)=temp<<12 + AC;
+				}
+				break;
+				case 0x14:
+					AC=AC>>1;
+				break;
+				case 0x15:
+					AC=AC<<1;
+				break;
 			}
 		}
 	}
+	return 0;
 }
 int main()
 {
 	unsigned long long Memory[1000];
-	int running=1;
-	while(running)
+	while(1)
 	{
 		short memloc=0;
 		string s;
@@ -149,11 +172,15 @@ int main()
 		}
 		else if(s=="SET")
 		{
-			cin>>Memory[mamloc];
+			cin>>Memory[memloc];
 		}
 		else if(s=="EXEC")
 		{
 			exec(Memory,memloc);
+		}
+		else if(s=="EXIT")
+		{
+			break;
 		}
 	}
 	return 0;
