@@ -1,5 +1,9 @@
 #include<bits/stdc++.h>
 using namespace std;
+#define BASE40 1099511627776
+#define BASE20 1048576
+#define BASE12 4096
+#define BASE8 256
 int exec(long long *M,short PC)
 {
 	long long AC=0,MQ=0,MBR=0,IBR=0,IR=0,MAR=0;
@@ -8,10 +12,11 @@ int exec(long long *M,short PC)
 		MAR=PC;
 		MBR=*(M+MAR);
 		char first=1;
-		IBR=(MBR)%((long long)1<<20);
+		IBR=(MBR)%BASE20;
 		IR=MBR>>32;
-		MAR=(MBR>>20)%((long long)1<<12);
+		MAR=(MBR>>20)%BASE12;
 		NextInstruction:;
+		MBR=(*(M+MAR));
 		switch(IR)
 		{
 			case 0x00:
@@ -20,41 +25,46 @@ int exec(long long *M,short PC)
 			break;
 			case 0x01:
 				cout<<"LOAD M("<<MAR<<")\n";
-				AC=(*(M+MAR));
+				AC=MBR;
 			break;
 			case 0x02:
 				cout<<"LOAD -M("<<MAR<<")\n";
-				AC=0-(*(M+MAR));
+				AC=0-MBR;
 			break;
 			case 0x03:
 				cout<<"LOAD |M("<<MAR<<")|\n";
-				AC=(*(M+MAR));
+				AC=MBR;
 				AC=(AC>0)?AC:-AC;
 			break;
 			case 0x04:
 				cout<<"LOAD -|M("<<MAR<<")|\n";
-				AC=(*(M+MAR));
+				AC=MBR;
 				AC=(AC>0)?-AC:AC;
 			break;
 			case 0x05:
 				cout<<"ADD M("<<MAR<<")\n";
-				AC+=(*(M+MAR));
+				AC+=MBR;
+				AC%=BASE40;
+				
 			break;
 			case 0x06:
 				cout<<"SUB M("<<MAR<<")\n";
-				AC-=(*(M+MAR));
+				AC-=MBR;
+				AC%=BASE40;
 			break;
 			case 0x07:
 				cout<<"ADD |M("<<MAR<<")|\n";
-				AC+=((*(M+MAR))>0)?(*(M+MAR)):-(*(M+MAR));
+				AC+=(MBR>0)?MBR:0-MBR;
+				AC%=BASE40;
 			break;
 			case 0x08:
 				cout<<"SUB |M("<<MAR<<")|\n";
-				AC-=((*(M+MAR))>0)?(*(M+MAR)):-(*(M+MAR));
+				AC-=(MBR>0)?MBR:0-MBR;
+				AC%=BASE40;
 			break;
 			case 0x09:
 				cout<<"LOAD MQ,M("<<MAR<<")\n";
-				MQ=(*(M+MAR));
+				MQ=MBR;
 			break;
 			case 0x0A:
 				cout<<"LOAD MQ\n";
@@ -63,11 +73,11 @@ int exec(long long *M,short PC)
 			case 0x0B:
 			{
 				cout<<"MUL M("<<MAR<<")\n";
-				long long MQR=MQ%(1<<20);
+				long long MQR=MQ % BASE20;
 				long long MQL=MQ>>20;
 				
-				long long MR=(*(M+MAR))%(1<<20);
-				long long ML=(*(M+MAR))>>20;
+				long long MR=MBR % BASE20;
+				long long ML=MBR>>20;
 				
 				long long ANS11=ML*MQL;
 				long long ANS10=MR*MQL;
@@ -78,13 +88,13 @@ int exec(long long *M,short PC)
 				long long temp=0;
 				MQ=ANS00;
 				temp=MQ;
-				MQ+=ANS01%(1<<20);
+				MQ+=(ANS01 * BASE20) % BASE40;
 				if(temp>MQ)
 				{
 					carry++;
 				}
 				temp=MQ;
-				MQ+=ANS10%(1<<20);
+				MQ+=(ANS10 * BASE20) % BASE40;
 				if(temp>MQ)
 				{
 					carry++;
@@ -99,27 +109,25 @@ int exec(long long *M,short PC)
 			case 0x0C:
 			{
 				cout<<"DIV M("<<MAR<<")\n";
-				long long quo=AC/(*(M+MAR)),rem=AC%(*(M+MAR));
+				long long quo=AC/MBR,rem=AC%MBR;
 				MQ=quo;
 				AC=rem;
 			}
 			break;
 			case 0x0D:
 				cout<<"JUMP M("<<MAR<<",0:19)\n";
-				MBR=*(M+MAR);
 				PC=MAR;
 				IR=MBR>>32;
-				MAR=(MBR>>20)%((long long)1<<12);
-				IBR=MBR%((long long)1<<20);
+				MAR=(MBR>>20)%BASE12;
+				IBR=MBR%BASE20;
 				first=1;
 				goto NextInstruction;
 			break;
 			case 0x0E:
 				cout<<"JUMP M("<<MAR<<",20:39)\n";
-				MBR=*(M+MAR);
 				PC=MAR;
-				IR=(MBR>>12)%((long long)1<<8);
-				MAR=MBR%((long long)1<<12);
+				IR=(MBR>>12)%BASE8;
+				MAR=MBR%BASE12;
 				first=0;
 				goto NextInstruction;
 			break;
@@ -127,11 +135,10 @@ int exec(long long *M,short PC)
 				cout<<"JUMP+ M("<<MAR<<",0:19)\n";
 				if(AC>=0)
 				{
-					MBR=*(M+MAR);
 					PC=MAR;
 					IR=MBR>>32;
-					MAR=(MBR>>20)%((long long)1<<12);
-					IBR=MBR%((long long)1<<20);
+					MAR=(MBR>>20)%BASE12;
+					IBR=MBR%BASE20;
 					first=1;
 					goto NextInstruction;
 				}
@@ -140,10 +147,9 @@ int exec(long long *M,short PC)
 				cout<<"JUMP+ M("<<MAR<<",20:39)\n";
 				if(AC>=0)
 				{
-					MBR=*(M+MAR);
 					PC=MAR;
-					IR=(MBR>>12)%((long long)1<<8);
-					MAR=MBR%((long long)1<<12);
+					IR=(MBR>>12)%BASE8;
+					MAR=MBR%BASE12;
 					first=0;
 					goto NextInstruction;
 				}
@@ -155,15 +161,15 @@ int exec(long long *M,short PC)
 			case 0x12:
 			{
 				cout<<"STOR M("<<MAR<<",8:19)\n";
-				long long temp=(*(M+MAR))%(1<<20);
-				long long temp1=(*(M+MAR))>>32;
+				long long temp=MBR%BASE20;
+				long long temp1=MBR>>32;
 				*(M+MAR)=temp1<<32 + AC<<20 + temp;
 			}
 			break;
 			case 0x13:
 			{
 				cout<<"STOR M("<<MAR<<",28:39)\n";
-				long long temp=(*(M+MAR))>>12;
+				long long temp=MBR>>12;
 				*(M+MAR)=temp<<12 + AC;
 			}
 			break;
@@ -180,7 +186,7 @@ int exec(long long *M,short PC)
 		{
 			first=0;
 			IR=IBR>>12;
-			MAR=IBR%(1<<12);
+			MAR=IBR%BASE12;
 			goto NextInstruction;
 		}
 	}
@@ -194,15 +200,24 @@ int main()
 		Memory[i]=0;
 	}
 	
-	Memory[0]=1;
-	Memory[1]=15;
-	Memory[3]=0x0100006001;
-	Memory[4]=0x1000601000;
-	Memory[5]=0x0500111002;
-	Memory[6]=0x0000001001;
-	Memory[7]=0x0600010008;
-	Memory[8]=0x1000411002;
-	Memory[9]=0x0000000000;
+	Memory[0x000]=1;
+	Memory[0x001]=15;
+	Memory[0x003]=0x0100106000;
+	Memory[0x004]=0x0F00601000;
+	Memory[0x005]=0x050010D008;
+	Memory[0x006]=0x0100006001;
+	Memory[0x007]=0x100080E004;
+	Memory[0x008]=0x1100200000;
+	Memory[0x008]=0x1100200000;
+	Memory[0x009]=5;
+	Memory[0x00B]=2;
+	Memory[0x00C]=3;
+	Memory[0x00E]=0x0900901009;
+	Memory[0x00F]=0x0600C10011;
+	Memory[0x010]=0x0A0001100D;
+	Memory[0x011]=0x000000500B;
+	Memory[0x012]=0x1100A0B00A;
+	Memory[0x013]=0x0100A0D00F;
 	
 	char running=1;
 	short memloc=0;
