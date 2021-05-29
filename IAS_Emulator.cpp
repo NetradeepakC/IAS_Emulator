@@ -1,10 +1,29 @@
+/*
+Name:		Netradeepak Chinchwadkar	Prem Shah
+Roll No.:	IMT2020014			IMT2020
+*/
 #include<bits/stdc++.h>
 using namespace std;
-#define BASE40 1099511627776
+#define BASE40 1099511627776//Preprocessing important powers of 2
 #define BASE20 1048576
 #define BASE12 4096
 #define BASE8 256
-int exec(long long *M,short PC)
+void n64to40(long long *n)//Converts 64 bit number to 40 bit
+{
+	(*n)=(*n)-(((*n)>>40)<<40);
+}
+void print40(long long n)//Prints a 2s complement form of 40 bit number
+{
+	char sign=(n>>39)%2;
+	if(sign)
+	{
+		cout<<"-";
+		n=(~n)+1;
+		n64to40(&n);
+	}
+	cout<<n;
+}
+int exec(long long *M,short PC)//Executes a code line by line until it reaches HLT
 {
 	long long AC=0,MQ=0,MBR=0,IBR=0,IR=0,MAR=0;
 	for(;PC<1000;PC++)
@@ -17,7 +36,7 @@ int exec(long long *M,short PC)
 		MAR=(MBR>>20)%BASE12;
 		NextInstruction:;
 		MBR=(*(M+MAR));
-		switch(IR)
+		switch(IR)//Each instruction when executed is displayed so as for the user to keep track of instructions
 		{
 			case 0x00:
 				cout<<"HLT\n";
@@ -30,37 +49,39 @@ int exec(long long *M,short PC)
 			case 0x02:
 				cout<<"LOAD -M("<<MAR<<")\n";
 				AC=0-MBR;
+				n64to40(&AC);
 			break;
 			case 0x03:
 				cout<<"LOAD |M("<<MAR<<")|\n";
 				AC=MBR;
 				AC=(AC>0)?AC:-AC;
+				n64to40(&AC);
 			break;
 			case 0x04:
 				cout<<"LOAD -|M("<<MAR<<")|\n";
 				AC=MBR;
 				AC=(AC>0)?-AC:AC;
+				n64to40(&AC);
 			break;
 			case 0x05:
 				cout<<"ADD M("<<MAR<<")\n";
 				AC+=MBR;
-				AC%=BASE40;
-				
+				n64to40(&AC);
 			break;
 			case 0x06:
 				cout<<"SUB M("<<MAR<<")\n";
 				AC-=MBR;
-				AC%=BASE40;
+				n64to40(&AC);
 			break;
 			case 0x07:
 				cout<<"ADD |M("<<MAR<<")|\n";
 				AC+=(MBR>0)?MBR:0-MBR;
-				AC%=BASE40;
+				n64to40(&AC);
 			break;
 			case 0x08:
 				cout<<"SUB |M("<<MAR<<")|\n";
 				AC-=(MBR>0)?MBR:0-MBR;
-				AC%=BASE40;
+				n64to40(&AC);
 			break;
 			case 0x09:
 				cout<<"LOAD MQ,M("<<MAR<<")\n";
@@ -109,9 +130,18 @@ int exec(long long *M,short PC)
 			case 0x0C:
 			{
 				cout<<"DIV M("<<MAR<<")\n";
-				long long quo=AC/MBR,rem=AC%MBR;
+				long long temp=(AC>0)?AC:0-AC;
+				char sign=AC>>39;
+				long long quo=temp/MBR,rem=temp%MBR;
+				if(sign<0)
+				{
+					quo=~quo;
+					n64to40(&quo);
+					rem=MBR-rem;
+				}
 				MQ=quo;
 				AC=rem;
+				n64to40(&MQ);
 			}
 			break;
 			case 0x0D:
@@ -133,7 +163,7 @@ int exec(long long *M,short PC)
 			break;
 			case 0x0F:
 				cout<<"JUMP+ M("<<MAR<<",0:19)\n";
-				if(AC>=0)
+				if((AC>>39)%2==0)
 				{
 					PC=MAR;
 					IR=MBR>>32;
@@ -145,7 +175,7 @@ int exec(long long *M,short PC)
 			break;
 			case 0x10:
 				cout<<"JUMP+ M("<<MAR<<",20:39)\n";
-				if(AC>=0)
+				if((AC>>39)%2==0)
 				{
 					PC=MAR;
 					IR=(MBR>>12)%BASE8;
@@ -176,10 +206,12 @@ int exec(long long *M,short PC)
 			case 0x14:
 				cout<<"LSH\n";
 				AC=AC<<1;
-				break;
+				n64to40(&AC);
+			break;
 			case 0x15:
 				cout<<"RSH\n";
 				AC=AC>>1;
+				n64to40(&AC);
 			break;
 		}
 		if(first)
@@ -200,14 +232,26 @@ int main()
 		Memory[i]=0;
 	}
 	
+	/*
+	Memory location 0-8 is for the assignment question
+	0 is a
+	1 is b
+	2 will hold the answer
+	3 onwards is the program
+	Memory location 9-13 is for the factorial program
+	9 holds value of n
+	A-C holds important values needed for calculation
+	D holds value value of n!
+	E onwards is the program
+	*/
+	
 	Memory[0x000]=1;
 	Memory[0x001]=15;
 	Memory[0x003]=0x0100106000;
 	Memory[0x004]=0x0F00601000;
 	Memory[0x005]=0x050010D008;
 	Memory[0x006]=0x0100006001;
-	Memory[0x007]=0x100080E004;
-	Memory[0x008]=0x1100200000;
+	Memory[0x007]=0x0F0080E004;
 	Memory[0x008]=0x1100200000;
 	Memory[0x009]=5;
 	Memory[0x00B]=2;
@@ -223,12 +267,14 @@ int main()
 	short memloc=0;
 	while(running)
 	{
-		cout<<"Current memory location: "<<memloc<<endl;
-		cout<<"Value at memory location: "<<Memory[memloc]<<endl;
-		cout<<"INR:\t1\n";
-		cout<<"DCR:\t2\n";
-		cout<<"GO:\t3\n";
-		cout<<"SET:\t4\n";
+		cout<<"Current memory location: "<<memloc<<endl;//Shows current memory address
+		cout<<"Value at memory location: ";//Shows it's value
+		print40(Memory[memloc]);
+		cout<<endl;
+		cout<<"INR:\t1\n";//Increments memory pointer by one
+		cout<<"DCR:\t2\n";//Decrements memory pointer by one
+		cout<<"GO:\t3\n";//Moves memory pointer to specified location
+		cout<<"SET:\t4\n";//Changes the value at a memory location to specified value
 		cout<<"EXEC:\t5\n";
 		cout<<"EXIT:\t0\n";
 		cout<<"Enter your choice: ";
